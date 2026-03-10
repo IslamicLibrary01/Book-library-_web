@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Islamic Library Pro</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #047857;
+            --primary-dark: #065f46;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --star-color: #fbbf24;
+        }
+
+        .dark-theme {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f1f5f9;
+            --text-light: #94a3b8;
+            --border: #334155;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Hind Siliguri', sans-serif; transition: background 0.3s, color 0.3s; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden; touch-action: pan-y; }
+
+        #initial-loader { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; gap: 15px; }
+        .spinner { width: 45px; height: 45px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #refresh-loader { position: fixed; top: 0; left: 0; width: 0%; height: 4px; background: #2563eb; z-index: 5000; transition: width 0.3s; box-shadow: 0 0 10px rgba(37,99,235,0.5); }
+
+        #auth-gateway, #upload-modal, #comment-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; z-index: 4000; }
+        .modal-card { background: var(--card-bg); padding: 30px; border-radius: 24px; width: 90%; max-width: 450px; position: relative; animation: zoomIn 0.3s ease; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Reader Modal Styles */
+        #reader-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 6000; display: none; flex-direction: column; animation: zoomIn 0.3s ease; }
+        .reader-header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .reader-header h3 { margin: 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
+        .close-reader-btn { background: rgba(255,255,255,0.2); border: none; color: white; font-size: 18px; cursor: pointer; padding: 5px 15px; border-radius: 8px; font-weight: bold; }
+        .close-reader-btn:hover { background: rgba(255,255,255,0.4); }
+
+        header { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .logo { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        
+        .hero { background: linear-gradient(rgba(4, 120, 87, 0.85), rgba(6, 95, 70, 0.9)), url('https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&q=80&w=1000') center/cover; padding: 45px 20px; text-align: center; color: white; }
+        .tab-btn { background: rgba(30, 58, 138, 0.8); color: white; border: none; padding: 8px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; }
+        .tab-btn.active { background: #2563eb; transform: scale(1.05); }
+
+        .container { padding: 25px 5%; max-width: 1100px; margin: auto; }
+
+        #catArea { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 25px; scrollbar-width: none; }
+        #catArea::-webkit-scrollbar { display: none; }
+        .cat-chip { padding: 8px 20px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 25px; cursor: pointer; white-space: nowrap; font-size: 14px; transition: 0.3s; color: var(--text); }
+        .cat-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .book-card { background: var(--card-bg); border-radius: 20px; padding: 22px; margin-bottom: 25px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; }
+        .book-title { font-size: 20px; font-weight: 700; color: var(--primary); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .verified-badge { font-size: 11px; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+        
+        .star-rating { color: var(--star-color); font-size: 18px; margin: 5px 0; cursor: pointer; display: inline-flex; gap: 2px; }
+        .read-btn { width: 100%; background: #f0fdf4; color: #166534; border: 1.5px solid #dcfce7; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 15px; }
+        
+        .card-actions { display: flex; justify-content: space-between; padding-top: 15px; border-top: 1px solid var(--border); margin-top: 15px; }
+        .action-item { cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 14px; color: var(--text-light); position: relative; user-select: none; padding: 5px 8px; border-radius: 8px; transition: color 0.2s; }
+        .action-item:active { transform: scale(0.95); }
+        
+        .emoji-picker { position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%); background: var(--card-bg); border: 1px solid var(--border); border-radius: 25px; padding: 8px 12px; display: none; gap: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 100; }
+
+        .btn-main { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; font-size: 16px; margin-top: 10px; }
+        .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; }
+        select, input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); outline: none; }
+    </style>
+</head>
+<body>
+
+    <div id="initial-loader">
+        <div class="spinner"></div>
+        <h3 style="color: var(--primary);">লোড হচ্ছে...</h3>
+    </div>
+
+    <div id="refresh-loader"></div>
+
+    <div id="reader-modal">
+        <div class="reader-header">
+            <h3 id="reader-title">বইয়ের নাম</h3>
+            <button class="close-reader-btn" onclick="closeReader()">বন্ধ করুন ✖</button>
+        </div>
+        <iframe id="reader-frame" style="flex: 1; width: 100%; border: none;" allow="autoplay"></iframe>
+    </div>
+
+    <div id="auth-gateway">
+        <div class="modal-card" style="text-align:center;">
+            <h1 style="color:var(--primary); margin-bottom:10px;">📖 ইসলামিক লাইব্রেরি</h1>
+            <input type="email" id="authEmail" placeholder="ইমেইল">
+            <input type="password" id="authPass" placeholder="পাসওয়ার্ড">
+            <button class="btn-main" onclick="handleLogin()">প্রবেশ করুন</button>
+            <button class="btn-outline" onclick="handleSignUp()">নতুন অ্যাকাউন্ট তৈরি করুন</button>
+        </div>
+    </div>
+
+    <div id="upload-modal">
+        <div class="modal-card">
+            <h2 style="color:var(--primary); margin-bottom:15px;">📤 নতুন বই যোগ করুন</h2>
+            <input type="text" id="bName" placeholder="বইয়ের নাম">
+            <input type="text" id="aName" placeholder="লেখকের নাম">
+            <select id="bCat">
+                <option value="কুরআন ও তাফসীর">কুরআন ও তাফসীর</option>
+                <option value="হাদিস">হাদিস</option>
+                <option value="সীরাত">সীরাত</option>
+                <option value="ইতিহাস">ইতিহাস</option>
+                <option value="অন্যান্য">অন্যান্য</option>
+            </select>
+            <input type="text" id="link" placeholder="ড্রাইভ শেয়ার লিঙ্ক">
+            <button class="btn-main" onclick="saveBook()">পাবলিশ করুন</button>
+            <button onclick="closeModal('upload-modal')" style="background:none; border:none; width:100%; margin-top:10px; cursor:pointer; color:var(--text-light)">বন্ধ করুন</button>
+        </div>
+    </div>
+
+    <div id="comment-modal">
+        <div class="modal-card">
+            <h3 id="cmtTitle" style="color:var(--primary)">মন্তব্যসমূহ</h3>
+            <div id="comment-list" style="max-height:250px; overflow-y:auto; margin:15px 0;"></div>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="newCmt" placeholder="আপনার মন্তব্য...">
+                <button onclick="postComment()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:12px; cursor:pointer;">পাঠান</button>
+            </div>
+            <button onclick="closeModal('comment-modal')" style="background:none; border:none; width:100%; margin-top:15px; cursor:pointer; color:var(--text-light)">বন্ধ করুন</button>
+        </div>
+    </div>
+
+    <div id="main-app" style="display:none;">
+        <header>
+            <div class="logo">📖 ইসলামীক বই লাইব্রেরী</div>
+            <div class="nav-actions" style="display:flex; align-items:center; gap:15px;">
+                <span style="cursor:pointer; font-size:20px;" onclick="triggerRefresh()">🔄</span>
+                <span style="cursor:pointer; font-size:20px;" onclick="toggleTheme()">🌓</span>
+                <button style="background:#fff; color:var(--primary); padding:6px 14px; border-radius:20px; border:none; font-weight:700; cursor:pointer; font-size:12px;" onclick="openModal('upload-modal')">➕ আপলোড</button>
+                <button style="background:rgba(255,255,255,0.2); color:white; padding:6px 14px; border-radius:20px; border:none; cursor:pointer; font-size:12px;" onclick="logout()">লগ-আউট</button>
+            </div>
+        </header>
+
+        <div class="hero">
+            <h1>জ্ঞানের আলোয় আলোকিত হোক জীবন</h1>
+            <div class="tab-nav" style="display:flex; justify-content:center; gap:8px; margin-top:20px;">
+                <button class="tab-btn active" id="tab-home" onclick="showView('home')">হোম</button>
+                <button class="tab-btn" id="tab-books" onclick="showView('books')">বইসমূহ</button>
+                <button class="tab-btn" id="tab-saved" onclick="showView('saved')">সংরক্ষিত</button>
+                <button class="tab-btn" id="tab-note" onclick="showView('note')">নির্দেশনা</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div id="searchArea" style="position:relative; margin-bottom:25px;">
+                <span style="position:absolute; left:18px; top:12px; font-size:18px;">🔍</span>
+                <input type="text" id="searchInput" placeholder="বই বা লেখকের নাম খুঁজুন..." style="width:100%; border-radius:30px; padding:12px 20px 12px 48px; border:1px solid var(--border); background:var(--card-bg); color:var(--text); outline:none;">
+            </div>
+
+            <div id="catArea" style="display:none;">
+                <div class="cat-chip active" onclick="filterCat(event, 'All')">সব বই</div>
+                <div class="cat-chip" onclick="filterCat(event, 'কুরআন ও তাফসীর')">কুরআন ও তাফসীর</div>
+                <div class="cat-chip" onclick="filterCat(event, 'হাদিস')">হাদিস</div>
+                <div class="cat-chip" onclick="filterCat(event, 'সীরাত')">সীরাত</div>
+                <div class="cat-chip" onclick="filterCat(event, 'ইতিহাস')">ইতিহাস</div>
+            </div>
+
+            <div id="view-home" class="view-content"><h3 style="margin-bottom:20px; color:var(--primary);">⭐ আজকের সেরা পছন্দ</h3><div id="homeList"></div></div>
+            <div id="view-books" class="view-content" style="display:none;"><h3 style="margin-bottom:20px; color:var(--primary);">📚 সকল বই</h3><div id="allBooksList"></div></div>
+            <div id="view-saved" class="view-content" style="display:none;"><h3 style="margin-bottom:20px; color:var(--primary);">🔖 সংরক্ষিত বই</h3><div id="savedList"></div></div>
+            
+            <div id="view-note" class="view-content" style="display:none;">
+                <div class="instruction-card" style="background: var(--card-bg); padding: 30px; border-radius: 24px; border: 1px solid var(--border);">
+                    <h3 style="color:var(--primary); text-align:center; margin-bottom:25px;">📖 ব্যবহারের নিয়মাবলী</h3>
+                    <p style="margin-bottom: 10px;">১. ড্রাইভে বই আপলোড করে 'Anyone with the link' মুড চালু করুন।</p>
+                    <p style="margin-bottom: 10px;">২. আপনার সেভ করা বইগুলো এখন সরাসরি আপনার অ্যাকাউন্টের সাথে যুক্ত থাকবে।</p>
+                    <p style="margin-bottom: 10px;">৩. হার্ট বাটনে চেপে ধরে রাখলে রিয়্যাকশন পিকার আসবে।</p>
+                    <p style="margin-bottom: 10px;">৪. "এখনই পড়ুন" বাটনে ক্লিক করলে ওয়েবসাইটের ভেতরেই বই পড়া যাবে।</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, doc, updateDoc, increment, arrayUnion, arrayRemove, setDoc, getDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDRnJqksE3qewoO22AbsySISXcmXkCZbTw",
+            authDomain: "public-islamic-library.firebaseapp.com",
+            projectId: "public-islamic-library",
+            storageBucket: "public-islamic-library.firebasestorage.app",
+            messagingSenderId: "699440695215",
+            appId: "1:699440695215:web:5feea512bb122374b9515a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let userNow = null; 
+        let allBooks = []; 
+        let activeCmtBook = null;
+        let savedIds = [];
+
+        // Auth Logic
+        window.handleLogin = () => {
+            const e = document.getElementById('authEmail').value;
+            const p = document.getElementById('authPass').value;
+            if(!e || !p) return alert("ইমেইল ও পাসওয়ার্ড দিন");
+            signInWithEmailAndPassword(auth, e, p).catch(err => alert("লগইন ব্যর্থ: " + err.message));
+        };
+
+        window.handleSignUp = () => {
+            const e = document.getElementById('authEmail').value;
+            const p = document.getElementById('authPass').value;
+            if(!e || !p) return alert("তথ্য পূরণ করুন");
+            createUserWithEmailAndPassword(auth, e, p)
+                .then(u => {
+                    setDoc(doc(db, "users", u.user.uid), { saved: [] });
+                    alert("অ্যাকাউন্ট তৈরি সফল!");
+                })
+                .catch(err => alert("ব্যর্থ: " + err.message));
+        };
+
+        onAuthStateChanged(auth, u => {
+            document.getElementById('initial-loader').style.display = 'none';
+            if(u) { 
+                userNow = u; 
+                document.getElementById('auth-gateway').style.display='none'; 
+                document.getElementById('main-app').style.display='block'; 
+                
+                // Fetch saved books safely
+                onSnapshot(doc(db, "users", u.uid), snap => {
+                    if(snap.exists()) {
+                        savedIds = snap.data().saved || [];
+                    } else {
+                        savedIds = [];
+                    }
+                    refreshViews();
+                });
+            } else { 
+                document.getElementById('main-app').style.display='none'; 
+                document.getElementById('auth-gateway').style.display='flex'; 
+            }
+        });
+
+        window.logout = () => signOut(auth);
+        window.toggleTheme = () => document.body.classList.toggle('dark-theme');
+        window.openModal = (id) => document.getElementById(id).style.display='flex';
+        window.closeModal = (id) => document.getElementById(id).style.display='none';
+
+        // Reader Logic
+        window.openReader = async (title, url, id) => {
+            await updateDoc(doc(db,'books', id), { views: increment(1) });
+            
+            let embedUrl = url;
+            if (url.includes('drive.google.com') && url.includes('/view')) {
+                embedUrl = url.replace('/view', '/preview').split('?')[0];
+            } else if (url.includes('drive.google.com/file/d/')) {
+                const match = url.match(/\/d\/(.+?)\//);
+                if(match) embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
+            }
+
+            document.getElementById('reader-title').innerText = title;
+            document.getElementById('reader-frame').src = embedUrl;
+            document.getElementById('reader-modal').style.display = 'flex';
+        };
+
+        window.closeReader = () => {
+            document.getElementById('reader-modal').style.display = 'none';
+            document.getElementById('reader-frame').src = ''; 
+        };
+
+        window.triggerRefresh = () => {
+            document.getElementById('refresh-loader').style.width = '100%';
+            setTimeout(() => location.reload(), 800);
+        };
+
+        let startY = 0;
+        window.addEventListener('touchstart', (e) => { if(window.scrollY === 0) startY = e.touches[0].pageY; }, {passive: true});
+        window.addEventListener('touchmove', (e) => {
+            if (window.scrollY === 0 && startY > 0 && e.touches[0].pageY > startY + 100) {
+                startY = 0; triggerRefresh();
+            }
+        }, {passive: true});
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allBooks.filter(s => {
+                const b = s.data();
+                return b.title.toLowerCase().includes(term) || b.author.toLowerCase().includes(term);
+            });
+            render(filtered, 'allBooksList');
+            if(document.getElementById('view-books').style.display === 'none') showView('books');
+        });
+
+        // Views
+        window.showView = (v) => {
+            document.querySelectorAll('.view-content').forEach(el => el.style.display='none');
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${v}`).style.display='block';
+            document.getElementById(`tab-${v}`).classList.add('active');
+            document.getElementById('catArea').style.display = (v === 'books') ? 'flex' : 'none';
+            if(v === 'saved') render(allBooks.filter(b => savedIds.includes(b.id)), 'savedList');
+        };
+
+        function refreshViews() {
+            render(allBooks.slice(0, 4), 'homeList');
+            render(allBooks, 'allBooksList');
+            if(document.getElementById('view-saved').style.display !== 'none') {
+                render(allBooks.filter(b => savedIds.includes(b.id)), 'savedList');
+            }
+        }
+
+        // Updated Toggle Save (Fixed for all users using merge:true)
+        window.toggleSave = async (event, id) => {
+            event.stopPropagation();
+            if(!userNow) return;
+            const userRef = doc(db, "users", userNow.uid);
+            
+            try {
+                if(savedIds.includes(id)) {
+                    await setDoc(userRef, { saved: arrayRemove(id) }, { merge: true });
+                } else {
+                    await setDoc(userRef, { saved: arrayUnion(id) }, { merge: true });
+                }
+            } catch (error) {
+                console.error("Error saving: ", error);
+            }
+        };
+
+        // Star Rating
+        window.setRating = async (event, id, rating) => {
+            event.stopPropagation();
+            await updateDoc(doc(db, "books", id), { [`ratings.${userNow.uid}`]: rating });
+        };
+
+        // Reactions
+        let pressTimer;
+        window.reactStart = (event, id) => {
+            event.stopPropagation();
+            pressTimer = setTimeout(() => {
+                document.getElementById(`picker-${id}`).style.display = 'flex';
+            }, 600);
+        };
+
+        window.reactEnd = async (event, id) => {
+            event.stopPropagation();
+            clearTimeout(pressTimer);
+            const book = allBooks.find(b => b.id === id).data();
+            const picker = document.getElementById(`picker-${id}`);
+            if(picker && picker.style.display === 'flex') return;
+            
+            if(book.reactions?.[userNow.uid]) {
+                await updateDoc(doc(db, "books", id), { [`reactions.${userNow.uid}`]: deleteField() });
+            } else {
+                await updateDoc(doc(db, "books", id), { [`reactions.${userNow.uid}`]: '❤️' });
+            }
+        };
+
+        window.setEmoji = async (event, id, emoji) => {
+            event.stopPropagation();
+            await updateDoc(doc(db, "books", id), { [`reactions.${userNow.uid}`]: emoji });
+            document.getElementById(`picker-${id}`).style.display = 'none';
+        };
+
+        // Comments
+        window.openComments = (event, id) => {
+            event.stopPropagation();
+            activeCmtBook = id;
+            const b = allBooks.find(snap => snap.id === id).data();
+            const list = document.getElementById('comment-list');
+            list.innerHTML = (b.comments?.length) ? b.comments.map(c => `
+                <div style="background:var(--bg); padding:10px; border-radius:10px; margin-bottom:8px; font-size:14px; border:1px solid var(--border);">
+                    <div style="font-weight:700; color:var(--primary); font-size:12px; margin-bottom:3px;">👤 @${c.user}</div>
+                    <div style="color:var(--text);">${c.text}</div>
+                </div>
+            `).join('') : '<p style="text-align:center; color:var(--text-light);">কোনো মন্তব্য নেই</p>';
+            openModal('comment-modal');
+        };
+
+        window.postComment = async () => {
+            const text = document.getElementById('newCmt').value;
+            if(!text || !activeCmtBook) return;
+            await updateDoc(doc(db, "books", activeCmtBook), { 
+                comments: arrayUnion({ user: userNow.email.split('@')[0], text: text }) 
+            });
+            document.getElementById('newCmt').value = "";
+            openComments({stopPropagation:()=>{}}, activeCmtBook);
+        };
+
+        // Add Book
+        window.saveBook = async () => {
+            const n = document.getElementById('bName').value;
+            const a = document.getElementById('aName').value;
+            const c = document.getElementById('bCat').value;
+            const l = document.getElementById('link').value;
+            if(!n || !l) return alert("তথ্য পূরণ করুন");
+            await addDoc(collection(db, "books"), {
+                title: n, author: a, category: c, url: l, uploader: userNow.email, time: new Date(), views: 0, reactions: {}, comments: [], ratings: {}
+            });
+            closeModal('upload-modal');
+        };
+
+        // Render Cards
+        function render(books, target) {
+            const div = document.getElementById(target); if(!div) return;
+            div.innerHTML = "";
+            books.forEach(snap => {
+                const b = snap.data();
+                const myRating = b.ratings?.[userNow.uid] || 0;
+                const reacts = b.reactions || {};
+                const myReact = reacts[userNow.uid] || '❤️';
+                const ratArray = Object.values(b.ratings || {});
+                const avg = ratArray.length ? (ratArray.reduce((a,b)=>a+b,0)/ratArray.length).toFixed(1) : "0.0";
+
+                const d = document.createElement('div');
+                d.className = 'book-card';
+                d.innerHTML = `
+                    <div class="book-title">${b.title} <span class="verified-badge">✓ Verified</span></div>
+                    <div style="font-size:14px; color:var(--text-light); margin-top:5px;">✍️ লেখক: ${b.author} | 📂 ${b.category || 'অন্যান্য'}</div>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                        <div class="star-rating">
+                            ${[1,2,3,4,5].map(i => `<span onclick="setRating(event, '${snap.id}', ${i})">${i <= myRating ? '★' : '☆'}</span>`).join('')}
+                            <span style="font-size:13px; color:var(--text-light); margin-left:5px;">(${avg})</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-light); background:var(--bg); padding:4px 10px; border-radius:12px;">👁 ${b.views} বার পড়া হয়েছে</div>
+                    </div>
+
+                    <button class="read-btn" onclick="openReader('${b.title}', '${b.url}', '${snap.id}')">📖 এখনই পড়ুন</button>
+                    
+                    <div class="card-actions">
+                        <div class="action-item" onmousedown="reactStart(event, '${snap.id}')" onmouseup="reactEnd(event, '${snap.id}')" ontouchstart="reactStart(event, '${snap.id}')" ontouchend="reactEnd(event, '${snap.id}')">
+                            ${myReact} ${Object.keys(reacts).length}
+                            <div class="emoji-picker" id="picker-${snap.id}">
+                                <span onclick="setEmoji(event, '${snap.id}', '👍')">👍</span><span onclick="setEmoji(event, '${snap.id}', '😍')">😍</span><span onclick="setEmoji(event, '${snap.id}', '💙')">💙</span>
+                            </div>
+                        </div>
+                        <div class="action-item" onclick="openComments(event, '${snap.id}')">💬 মন্তব্য (${b.comments?.length || 0})</div>
+                        <div class="action-item" onclick="toggleSave(event, '${snap.id}')" style="color:${savedIds.includes(snap.id)?'var(--primary)':'inherit'}; font-weight:${savedIds.includes(snap.id)?'bold':'normal'}">
+                            🔖 ${savedIds.includes(snap.id)?'সংরক্ষিত':'সেভ'}
+                        </div>
+                    </div>
+                `;
+                div.appendChild(d);
+            });
+        }
+
+        // Realtime Book List
+        onSnapshot(query(collection(db, "books"), orderBy("time", "desc")), snap => {
+            allBooks = snap.docs;
+            refreshViews();
+        });
+    </script>
+</body>
+</html>
